@@ -181,13 +181,13 @@ async def process2(message: types.Message, state: FSMContext):
                                     name=data['doc_obj']['name'])
         if data['bot_rej'] == 0:
             documenter.alignment = message.text
-            await message.answer(documenter.lineal_is_correct_alignment(), reply_markup=None)
+            await message.answer(documenter.lineal_is_choosen('alignment'), reply_markup=None)
         elif data['bot_rej'] == 1:
             documenter.interval = float(message.text)
-            await message.answer(documenter.lineal_is_correct_interval(), reply_markup=None)
+            await message.answer(documenter.lineal_is_choosen('interval'), reply_markup=None)
         elif data['bot_rej'] == 2:
             documenter.indent = float(message.text)
-            await message.answer(documenter.lineal_is_correct_indent(), reply_markup=None)
+            await message.answer(documenter.lineal_is_choosen('indent'), reply_markup=None)
 
     await Form.choose1.set()
     await message.answer("Спасибо за использование нашего бота, вы можете выбрать другую функцию для вашего файла",
