@@ -44,6 +44,10 @@ def join_numbers(numbers):
 
 
 class FileManager:
+    functions: dict = {
+        'alignment'
+    }
+
     def __init__(self, user_id: int, docx_: docx.Document, name: str, doc_rej: bool = False,
                  gost=None):
         self.gost = gost
@@ -70,43 +74,11 @@ class FileManager:
             return ans
         return "Все соответствует госту"
 
-    def lineal_is_correct_alignment(self) -> str:
+    def lineal_is_choosen(self, function_name) -> str:
         paragraphs = self.user_file.paragraphs
         errors = []
         for i, paragraph in enumerate(paragraphs):
-            errors.append((self.is_correct_alignment(paragraph), i))
-        return self.msg_errors(filter(lambda tup: tup[0][0] is True, errors))
-
-    def lineal_is_correct_font_size(self) -> str:
-        paragraphs = self.user_file.paragraphs
-        errors = []
-        for i, paragraph in enumerate(paragraphs):
-            errors.append((self.is_correct_font_size(paragraph), i))
-
-        return self.msg_errors(filter(lambda tup: tup[0][0] is True, errors))
-
-    def lineal_is_correct_font_style(self) -> str:
-        paragraphs = self.user_file.paragraphs
-        errors = []
-        for i, paragraph in enumerate(paragraphs):
-            errors.append((self.is_correct_font_style(paragraph), i))
-        return self.msg_errors(filter(lambda tup: tup[0][0] is True, errors))
-
-    def lineal_is_correct_indent(self) -> str:
-        paragraphs = self.user_file.paragraphs
-        errors = []
-        for i, paragraph in enumerate(paragraphs):
-            if paragraph.style.name not in c.TITLE.values():
-                if len(paragraph._element.xpath('./w:pPr/w:numPr')) > 0:
-                    continue
-                errors.append((self.is_correct_indent(paragraph), i))
-        return self.msg_errors(filter(lambda tup: tup[0][0] is True, errors))
-
-    def lineal_is_correct_interval(self) -> str:
-        paragraphs = self.user_file.paragraphs
-        errors = []
-        for i, paragraph in enumerate(paragraphs):
-            errors.append((self.is_correct_interval(paragraph), i))
+            errors.append((self.get_f_dict()[function_name](paragraph), i))
         return self.msg_errors(filter(lambda tup: tup[0][0] is True, errors))
 
     async def get_params_from_gost(self):
@@ -119,6 +91,15 @@ class FileManager:
             self.fsize = params['font-size']
             return True
         return False
+
+    def get_f_dict(self):
+        return {
+            'font-size': self.is_correct_font_size,
+            'font-style': self.is_correct_font_style,
+            'alignment': self.is_correct_alignment,
+            'indent': self.is_correct_indent,
+            'interval': self.is_correct_interval
+        }
 
     def is_correct_font_size(self, paragraph) -> tuple:
         error = (False, ('pink', 'All-okey'))
@@ -277,10 +258,6 @@ class FileManager:
 
     def close(self):
         os.remove(self.user_file_name)
-
-    @staticmethod
-    def test():
-        print('Test')
 
 
 if __name__ == '__main__':
