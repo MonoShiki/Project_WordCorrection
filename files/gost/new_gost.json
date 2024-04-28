@@ -1,0 +1,15 @@
+{
+  "name": "new_gost",
+  "heading": {
+      "font-style": ["Times New Roman", "Arial"],
+      "font-size": "14",
+      "indent": ["12.5", "17"],
+      "interval": ["1.5", "2"],
+      "alignment": "по левому"},
+  "main_text": {
+      "font-style": ["Times New Roman", "Arial"],
+      "font-size": "14",
+      "indent": ["12.5", "17"],
+      "interval": ["1.5", "2"],
+      "alignment": "по ширине"}
+}
