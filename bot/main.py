@@ -7,7 +7,7 @@ from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import StatesGroup, State
 from aiogram.utils import executor
 from docx import Document
-from docx_ed import async_docx as dc, file_reader as fl
+from docx_ed import async_docx as dc, file_reader as fl, gen_template as gt
 from aiogram.contrib.fsm_storage.mongo import MongoStorage
 
 from bot import cfg as c
@@ -33,6 +33,8 @@ async def resetData(message: types.Message, state: FSMContext = None):
 class Form(StatesGroup):
     file_ = State()
     prechoose = State()
+    user_file_gost = State()
+    user_gost = State()
     gost = State()
     final_gost = State()
     choose1 = State()
@@ -45,7 +47,7 @@ m_i_key = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True
 alig_key = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True).add(
     "по ширине", "по левому краю", "по правому краю", "по центру", "по умолчанию")
 start_keys = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=1).add(
-    "Проверить конкретный гост", "Проверить отдельно", "Прекратить взаимодействие")
+    "Проверить конкретный гост", "Сформировать свой гост", "Проверить отдельно", "Прекратить взаимодействие")
 other_keys = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True).add(
     "Проверка выравнивания", "Проверка межстрочного интервала", "Проверка абзацных отступов",
     "Прекратить взаимодействие")
@@ -55,14 +57,14 @@ file_text_keys = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboa
 
 
 # Function to generate gost keys
-def gost_keys():
+def gost_keys(user_id):
     gkey = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
-    for ke in fl.FileReader.get_files():
+    possible_gost = str(user_id)
+    if str(user_id) in fl.FileReader.get_user_gosts():
+        gkey.add('Созданный вами гост')
+    for ke in fl.FileReader.get_actual_pre_gosts():
         gkey.add(ke)
     return gkey
-
-
-gkeys = gost_keys()
 
 
 @dp.message_handler(commands=["start"])
@@ -92,8 +94,11 @@ async def process(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         if message.text == "Проверить конкретный гост":
             await message.answer("Спасибо, за выбор. Теперь выберите гост, который вы хотите проверить",
-                                 reply_markup=gkeys)
+                                 reply_markup=gost_keys(message.chat.id))
             await Form.gost.set()
+        elif message.text == "Сформировать свой гост":
+            await message.answer("Спасибо, за выбор. Теперь отправьте свой идеальный docx файл")
+            await Form.user_file_gost.set()
         elif message.text == "Проверить отдельно":
             await message.answer("Теперь отправьте, что вы хотите проверить", reply_markup=other_keys)
             await Form.choose1.set()
@@ -105,16 +110,36 @@ async def process(message: types.Message, state: FSMContext):
                 reply_markup=start_keys)
 
 
+@dp.message_handler(state=Form.user_file_gost, content_types=types.ContentType.DOCUMENT)
+async def process_user_file(message: types.Message, state: FSMContext):
+    if message.document.mime_type == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+        doc_name = await message.document.download(destination_dir="../files/")
+        async with state.proxy() as data:
+            # Create a dictionary containing relevant data from FileManager
+            templ = gt.Template(user_id=message.chat.id, docx_=Document(doc_name.name))
+            templ.writeTemplates(templ.generate_gost())
+            data['doc_obj']['gost'] = str(message.chat.id)
+        await message.answer("Спасибо, ваш файл docx получен и обработан! Теперь выберите режим взаимодействия",
+                             reply_markup=file_text_keys)
+        await Form.final_gost.set()
+    else:
+        await message.answer("Пожалуйста, отправьте файл в формате docx.")
+
+
 @dp.message_handler(state=Form.gost)
 async def process_gost(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
-        if message.text in fl.FileReader.get_files():
-            data['doc_obj']['gost'] = message.text
+        user_gosts = fl.FileReader.get_user_gosts().keys()
+        pre_gosts = fl.FileReader.get_actual_pre_gosts().keys()
+        user_gost = None
+        if message.text == 'Созданный вами гост': user_gost = str(message.chat.id)
+        if user_gost in user_gosts or message.text.gost in pre_gosts:
+            data['doc_obj']['gost'] = user_gost if user_gost else message.text
             await message.answer("Выберите режим взаимодействия", reply_markup=file_text_keys)
             await Form.final_gost.set()
         else:
             await Form.start.set()
-            await message.answer('Данного госта нет в базе', reply_markup=gkeys)
+            await message.answer('Данного госта нет в базе', reply_markup=gost_keys(message.chat.id))
 
 
 @dp.message_handler(state=Form.final_gost)
