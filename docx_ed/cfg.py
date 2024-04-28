@@ -15,6 +15,20 @@ sel_gost = {
    None: "по умолчанию"
 }
 
+templ_sel_gost = {
+   3: "по ширине",
+   0: "по левому",
+   2: "по правому",
+   1: "по центру",
+   None: "по умолчанию"
+}
+
+
+
+template_gost = {"по ширине": 3, "по левому": 0,
+    "по правому": 2, "по центру": 1,
+    "по умолчанию": WD_ALIGN_PARAGRAPH is None}
+
 setter_eng = {
     "JUSTIFY": WD_ALIGN_PARAGRAPH.JUSTIFY, "LEFT": WD_ALIGN_PARAGRAPH.LEFT,
     "RIGHT": WD_ALIGN_PARAGRAPH.RIGHT, "CENTER": WD_ALIGN_PARAGRAPH.CENTER,
