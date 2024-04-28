@@ -1,11 +1,11 @@
 import asyncio
 import os
-import style_parser as sp
 import docx
 import docx_ed.cfg as c
 
 from typing import Any
 from dataclasses import dataclass
+from docx_ed import style_parser as sp
 from docx_ed.file_reader import FileReader
 from docx_ed.gen_template import Template
 
